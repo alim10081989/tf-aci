@@ -18,12 +18,14 @@ resource "random_string" "container_name" {
   special = false
 }
 
+## Create user assigned managed identity ##
 resource "azurerm_user_assigned_identity" "managed_identity" {
   name                = "container-uami"
   location            = data.azurerm_resource_group.acr_rg.location
   resource_group_name = data.azurerm_resource_group.acr_rg.name
 }
 
+## Assign AcrPull role to the created managed identity ##
 resource "azurerm_role_assignment" "acrpull_role" {
   scope                = data.azurerm_container_registry.acr.id
   role_definition_name = "AcrPull"
@@ -38,6 +40,8 @@ resource "azurerm_container_group" "container" {
   os_type             = "Linux"
   restart_policy      = var.restart_policy
   dns_name_label      = "${var.container_group_name_prefix}-${random_string.container_name.result}"
+
+  ## For use with user assigned managed identity with Premium SKU based ACR ##
   # identity {
   #   type = "UserAssigned"
   #   identity_ids = [
@@ -45,6 +49,7 @@ resource "azurerm_container_group" "container" {
   #   ]
   # }
 
+  ## Only with ACR admin enabled for POC purpose ##
   image_registry_credential {
     username = data.azurerm_container_registry.acr.admin_username
     password = data.azurerm_container_registry.acr.admin_password
